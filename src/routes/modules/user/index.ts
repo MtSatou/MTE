@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import UserRoutes from './UserRoutes';
 import auth from '@src/routes/middleware/auth';
-import { body, param } from 'express-validator';
+import { body } from 'express-validator';
 
 // 模块自身的基础路由（挂载点由 src/routes/index.ts 注册）
 export const Base = '/users';
@@ -31,12 +31,11 @@ userRouter.put(
 );
 
 /**
- * 删除一个用户。
- * /users/delete/:id
+ * 删除登录用户。
+ * /users/delete
  */
 userRouter.delete(
-  '/delete/:id',
-  param('id').isNumeric().notEmpty(),
+  '/delete',
   auth,
   UserRoutes.delete,
 );
