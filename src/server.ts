@@ -11,6 +11,9 @@ import logger from '@src/util/log';
 import { isDev } from '@src/util/baseUrl';
 import { globalLimiter } from '@src/util/rate-limit';
 
+import { testConnection, closePool } from './repos/mysql';
+import { initDatabase } from './repos/database';
+
 import 'express-async-errors';
 
 import BaseRouter from '@src/routes';
@@ -79,3 +82,52 @@ app.use('/uploads', express.static(uploadsDir));
 // });
 
 export default app;
+
+
+
+// ---- 初始化数据库 ---- //
+// 初始化数据库连接
+async function initializeDatabase() {
+  try {
+    const isConnected = await testConnection();
+    if (isConnected) {
+      logger.info('MySQL 数据库连接成功');
+      await initDatabase();
+    } else {
+      logger.error('MySQL 数据库连接失败');
+      throw new Error('MySQL 数据库连接失败');
+    }
+  } catch (error) {
+    logger.error(error);
+    throw error;
+  }
+}
+
+// 执行数据库初始化
+initializeDatabase().catch((error) => {
+  logger.error(error);
+  throw new Error('数据库初始化失败');
+});
+
+// 应用关闭时清理数据库连接
+process.on('SIGINT', async () => {
+  logger.info('正在关闭数据库连接...');
+  try {
+    await closePool();
+    logger.info('数据库连接已关闭');
+  } catch (error) {
+    logger.error(error);
+  }
+  throw new Error('关闭数据库连接时出错');
+});
+
+process.on('SIGTERM', async () => {
+  logger.info('正在关闭数据库连接...');
+  try {
+    await closePool();
+    logger.info('数据库连接已关闭');
+  } catch (error) {
+    logger.error(error);
+  }
+  throw new Error('关闭数据库连接时出错');
+});

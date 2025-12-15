@@ -22,7 +22,7 @@ export default {
     },
   },
   Jwt: {
-    Secret: (process.env.JWT_SECRET ??  ''),
+    Secret: (process.env.JWT_SECRET ?? ''),
     Exp: (process.env.COOKIE_EXP ?? ''), // exp at the same time as the cookie
   },
   // API 根路由（例如 '/api'）。将根路径放到配置中，便于部署时修改前缀
@@ -35,5 +35,16 @@ export default {
     User: (process.env.EMAIL_USER ?? ''),
     Pass: (process.env.EMAIL_PASS ?? ''),
     From: (process.env.EMAIL_FROM ?? ''),
+  },
+  // MySQL数据库配置
+  Database: {
+    Host: (process.env.DB_HOST ?? 'localhost'),
+    Port: Number(process.env.DB_PORT ?? 3306),
+    User: (process.env.DB_USER ?? 'root'),
+    Password: (process.env.DB_PASSWORD ?? ''),
+    Database: (process.env.DB_NAME ?? 'mtexpress'),
+    Charset: (process.env.DB_CHARSET ?? 'utf8mb4'),
+    Timezone: (process.env.DB_TIMEZONE ?? '+08:00'),
+    ConnectionLimit: Number(process.env.DB_CONNECTION_LIMIT ?? 10),
   },
 } as const;

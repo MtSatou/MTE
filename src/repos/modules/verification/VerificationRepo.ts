@@ -1,48 +1,52 @@
-import orm from './orm';
+import { query } from '@src/repos/mysql';
 import { IVerificationCode } from '@src/types/verification';
 
 /** 保存验证码 */
 async function save(email: string, code: string, expiresInMinutes: number = 10): Promise<IVerificationCode> {
-  const db = await orm.openDb();
   const now = Date.now();
   const expiresAt = now + expiresInMinutes * 60 * 1000;
 
-  // 删除该邮箱的旧验证码
-  db.codes = db.codes.filter(c => c.email !== email);
+  // 使用 REPLACE INTO 语句，先删除旧记录再插入新记录
+  const sql = `
+    REPLACE INTO verification_codes (email, code, createdAt, expiresAt)
+    VALUES (?, ?, ?, ?)
+  `;
 
-  const record: IVerificationCode = {
+  await query(sql, [email, code, now, expiresAt]);
+
+  return {
     email,
     code,
     createdAt: now,
     expiresAt,
   };
-
-  db.codes.push(record);
-  await orm.saveDb(db);
-  return record;
 }
 
 /** 验证验证码 */
 async function verify(email: string, code: string): Promise<boolean> {
-  const db = await orm.openDb();
   const now = Date.now();
 
-  const record = db.codes.find(c => c.email === email);
-  if (!record) return false;
+  // 查找验证码记录
+  const selectSql = 'SELECT * FROM verification_codes WHERE email = ?';
+  const rows = await query(selectSql, [email]) as IVerificationCode[];
+
+  if (rows.length === 0) return false;
+
+  const record = rows[0];
 
   // 检查是否过期
   if (record.expiresAt < now) {
     // 删除过期记录
-    db.codes = db.codes.filter(c => c.email !== email);
-    await orm.saveDb(db);
+    const deleteSql = 'DELETE FROM verification_codes WHERE email = ?';
+    await query(deleteSql, [email]);
     return false;
   }
 
   // 验证码匹配
   if (record.code === code) {
     // 验证成功后删除该验证码
-    db.codes = db.codes.filter(c => c.email !== email);
-    await orm.saveDb(db);
+    const deleteSql = 'DELETE FROM verification_codes WHERE email = ?';
+    await query(deleteSql, [email]);
     return true;
   }
 
@@ -51,14 +55,14 @@ async function verify(email: string, code: string): Promise<boolean> {
 
 /** 清理过期验证码 */
 async function cleanExpired(): Promise<number> {
-  const db = await orm.openDb();
   const now = Date.now();
-  const before = db.codes.length;
 
-  db.codes = db.codes.filter(c => c.expiresAt >= now);
-  await orm.saveDb(db);
+  // 删除过期的验证码记录
+  const deleteSql = 'DELETE FROM verification_codes WHERE expiresAt < ?';
+  const result = await query(deleteSql, [now]) as { affectedRows: number };
 
-  return before - db.codes.length;
+  // 返回删除的记录数
+  return result.affectedRows || 0;
 }
 
 export default {

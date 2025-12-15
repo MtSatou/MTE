@@ -1,48 +1,57 @@
-import orm from './orm';
+import { query } from '../../mysql';
 import { IUploadedFile } from '@src/types/upload';
 
 /** 获取自增 id */
 async function nextId(): Promise<number> {
-  const db = await orm.openDb();
-  const maxId = db.uploads.reduce((m, f) => Math.max(m, Number(f.id) || 0), 0);
-  return maxId + 1;
+  const rows = await query('SELECT MAX(id) as maxId FROM uploads') as { maxId: number }[];
+  return (rows[0]?.maxId || 0) + 1;
 }
 
 /** 保存上传文件记录 */
 async function add(record: Omit<IUploadedFile, 'id'>): Promise<IUploadedFile> {
-  const db = await orm.openDb();
   const id = await nextId();
-  const uploadRecord: IUploadedFile = {
+  const sql = `
+    INSERT INTO uploads (id, originalName, storedName, filePath, fileSize, mimeType, userId, uploadTime)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+  await query(sql, [
     id,
-    ...record,
-  };
-  db.uploads.push(uploadRecord);
-  await orm.saveDb(db);
-  return uploadRecord;
+    record.originalName,
+    record.storedName,
+    record.filePath,
+    record.fileSize,
+    record.mimeType,
+    record.userId,
+    record.uploadTime || new Date().toISOString().slice(0, 19).replace('T', ' ')
+  ]);
+
+  const result = await getById(id);
+
+  if (!result) {
+    throw new Error(`Insert succeeded but record not found, id=${id}`);
+  }
+  // 返回插入的记录
+  return result;
 }
 
 /** 通过 id 获取上传记录 */
 async function getById(id: number): Promise<IUploadedFile | null> {
-  const db = await orm.openDb();
-  return db.uploads.find(u => Number(u.id) === Number(id)) || null;
+  const sql = 'SELECT * FROM uploads WHERE id = ?';
+  const rows = await query(sql, [id]) as IUploadedFile[];
+  return rows.length > 0 ? rows[0] : null;
 }
 
 /** 获取用户的所有上传记录 */
 async function getAllByUserId(userId: number): Promise<IUploadedFile[]> {
-  const db = await orm.openDb();
-  return db.uploads.filter(u => Number(u.userId) === Number(userId));
+  const sql = 'SELECT * FROM uploads WHERE userId = ? ORDER BY uploadTime DESC';
+  return await query(sql, [userId]) as IUploadedFile[];
 }
 
 /** 删除上传记录 */
 async function deleteById(id: number): Promise<boolean> {
-  const db = await orm.openDb();
-  const idx = db.uploads.findIndex(u => Number(u.id) === Number(id));
-  if (idx >= 0) {
-    db.uploads.splice(idx, 1);
-    await orm.saveDb(db);
-    return true;
-  }
-  return false;
+  const sql = 'DELETE FROM uploads WHERE id = ?';
+  const result = await query(sql, [id]) as { affectedRows: number };
+  return (result.affectedRows || 0) > 0;
 }
 
 export default {
