@@ -6,7 +6,7 @@ export async function createUsersTable(): Promise<void> {
   const sql = `
     CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      username VARCHAR(255) NOT NULL UNIQUE,
+      username VARCHAR(255) NOT NULL,
       email VARCHAR(255) NOT NULL UNIQUE,
       password VARCHAR(255) NOT NULL,
       code VARCHAR(255) NULL,
@@ -19,7 +19,8 @@ export async function createUsersTable(): Promise<void> {
       INDEX idx_email (email),
       INDEX idx_username (username),
       INDEX idx_token (token(255))
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    AUTO_INCREMENT=10000;
   `;
 
   try {

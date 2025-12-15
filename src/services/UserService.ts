@@ -19,11 +19,14 @@ function getAll(): Promise<IUser[]> {
  * 添加一个用户
  */
 async function addOne(user: IUser): Promise<void> {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) {
+    throw new RouteError(HttpStatusCodes.BAD_REQUEST, '邮箱格式不正确');
+  }
   const byEmail = await UserRepo.getOne(user.email);
   if (byEmail) {
     throw new RouteError(HttpStatusCodes.BAD_REQUEST, '邮箱已存在');
   }
-  const newuser = await newUser(user);
+  const newuser = newUser(user);
   return UserRepo.add(newuser);
 }
 

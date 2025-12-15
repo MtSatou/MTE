@@ -48,7 +48,7 @@ async function getAll(): Promise<IUser[]> {
 /**
  * 添加一名用户
  */
-async function add(user: IUser): Promise<void> {
+async function add(user: Omit<IUser, 'id'>): Promise<void> {
   const sql = `
     INSERT INTO users (username, email, password, code, avatar, created, updated, token, tokenExpiresAt, lastActiveAt)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
