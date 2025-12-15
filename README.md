@@ -58,12 +58,50 @@ userRouter.post(
 
 ## 内置接口
 
-### 全局响应
+### 全局响应格式
+所有 API 接口都遵循统一的响应格式：
+
 ```js
 {
-  code: 0,
-  message: "内容"
+  "code": HTTP状态码,      // 200 表示成功，其他表示错误
+  "message": "响应信息",    // 成功或错误的描述信息
+  "data": {},             // 业务数据（成功时才有）
+  "error": "详细错误信息"   // 可选，仅在错误时提供
 }
+```
+
+#### 成功响应示例
+```js
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "id": 1,
+    "username": "zhangsan",
+    "email": "example@email.com"
+  }
+}
+```
+
+#### 错误响应示例
+```js
+{
+  "code": 400,
+  "message": "用户名不能为空",
+  "error": perload
+}
+```
+
+#### 便捷响应方法
+开发者可以直接使用以下方法快速生成标准响应：
+```js
+// 成功响应
+res.success(data, message)           // 默认 200, 可在第三个参数指定响应码
+
+// 错误响应
+res.error(message, error)        // 400 错误, 可在第三个参数指定响应码
+
+// 可在responseCode.ts文件中自行扩展边界响应
 ```
 
 ### 发送邮件
@@ -91,9 +129,11 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - 成功返回
   ```js
   {
-    "code": 0,
+    "code": 200,
     "message": "验证码已发送，请查收邮件",
-    "email": "xx@xx.com"
+    "data": {
+      "email": "xx@xx.com"
+    }
   }
   ```
 
@@ -109,8 +149,11 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - 成功返回
   ```js
   {
-    "valid": true,
-    "message": "验证成功"
+    "code": 200,
+    "message": "验证成功",
+    "data": {
+      "valid": true
+    }
   }
   ```
 
@@ -128,19 +171,23 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - 成功返回
   ```js
   {
-    "id": 1,
-    // 源文件名
-    "originalName": "avatar.jpg",
-    // 服务端文件名
-    "storedName": "20251102_1762050024918_1236.jpg",
-    // 服务端文件路径
-    "filePath": "/uploads/20251102_1762050024918_1236.jpg",
-    // 文件大小
-    "fileSize": 53886,
-    // 文件类型
-    "mimeType": "image/jpeg",
-    // 上传时间
-    "uploadTime": "2025/11/2 10:20:24"
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+      "id": 1,
+      // 源文件名
+      "originalName": "avatar.jpg",
+      // 服务端文件名
+      "storedName": "20251102_1762050024918_1236.jpg",
+      // 服务端文件路径
+      "filePath": "/uploads/20251102_1762050024918_1236.jpg",
+      // 文件大小
+      "fileSize": 53886,
+      // 文件类型
+      "mimeType": "image/jpeg",
+      // 上传时间
+      "uploadTime": "2025/11/2 10:20:24"
+    }
   }
   ```
 
@@ -154,25 +201,28 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - 成功返回
   ```js
   {
-    "code": 0,
-    "uploads": [
+    "code": 200,
+    "message": "操作成功",
+    "data": {
+      "uploads": [
         {
-        "id": 1,
-        // 源文件名
-        "originalName": "avatar.jpg",
-        // 服务端文件名
-        "storedName": "20251102_1762050024918_1236.jpg",
-        // 服务端文件路径
-        "filePath": "/uploads/20251102_1762050024918_1236.jpg",
-        // 文件大小
-        "fileSize": 53886,
-        // 文件类型
-        "mimeType": "image/jpeg",
-        // 上传时间
-        "uploadTime": "2025/11/2 10:20:24"
-      },
-      // ...
-    ]
+          "id": 1,
+          // 源文件名
+          "originalName": "avatar.jpg",
+          // 服务端文件名
+          "storedName": "20251102_1762050024918_1236.jpg",
+          // 服务端文件路径
+          "filePath": "/uploads/20251102_1762050024918_1236.jpg",
+          // 文件大小
+          "fileSize": 53886,
+          // 文件类型
+          "mimeType": "image/jpeg",
+          // 上传时间
+          "uploadTime": "2025/11/2 10:20:24"
+        },
+        // ...
+      ]
+    }
   }
   ```
 
@@ -187,8 +237,9 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - 成功返回
   ```js
   {
-    "code": 0,
-    "uploads": {
+    "code": 200,
+    "message": "操作成功",
+    "data": {
       "id": 1,
       // 源文件名
       "originalName": "avatar.jpg",
@@ -220,7 +271,7 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - 成功返回
   ```js
   {
-    "code": 0,
+    "code": 200,
     "message": "删除成功"
   }
   ```
@@ -267,6 +318,9 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - 存储用户数据
   ```js
   {
+    "code": 200,
+    "message": "注册成功",
+    "data": {
       "id": 0,
       "username": "zhangsan",
       "email": "123@163.com",
@@ -278,6 +332,7 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
       "tokenExpiresAt": null,
       "lastActiveAt": null
     }
+  }
   ```
 
   
@@ -292,10 +347,13 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - 接口返回
   ```js
   {
-    "code": 0,
-    "token": "",
-    "expiresAt": 0,
-    "user": {} // 用户信息
+    "code": 200,
+    "message": "登录成功",
+    "data": {
+      "token": "",
+      "expiresAt": 0,
+      "user": {} // 用户信息
+    }
   }
   ```
 
@@ -317,7 +375,7 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - 接口返回
   ```js
   {
-    "code": 0,
+    "code": 200,
     "message": "更新成功"
   }
   ```
@@ -335,7 +393,7 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - 接口返回
   ```js
   {
-    "code": 0,
+    "code": 200,
     "message": "注销成功"
   }
   ```
@@ -352,15 +410,18 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - 接口返回
   ```js
   {
-    "code": 0,
-    "valid": true,
-    "payload": {
+    "code": 200,
+    "message": "Token有效",
+    "data": {
+      "valid": true,
+      "payload": {
         "id": 0,
         "email": "xxx",
         "iat": 0,
         "exp": 0
-    },
-    "user": {}
+      },
+      "user": {}
+    }
   }
   ```
 
@@ -374,9 +435,12 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - 接口返回
   ```js
   {
-    "code": 0,
-    "token": "",
-    "expiresAt": 0
+    "code": 200,
+    "message": "Token刷新成功",
+    "data": {
+      "token": "",
+      "expiresAt": 0
+    }
   }
   ```
 
@@ -397,14 +461,16 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
 - 响应示例
 ```json
 {
-  "code": 0,
-  "total": 0,  // 总数
-  "active": 0, // 在线
-  "rooms": {   // 已开启的房间
+  "code": 200,
+  "message": "WebSocket 服务运行中",
+  "data": {
+    "total": 0,      // 总数
+    "active": 0,     // 在线
+    "rooms": {       // 已开启的房间
       "2": 1
-  },
-  "connections": 0,
-  "message": "WebSocket 服务运行中"
+    },
+    "connections": 0
+  }
 }
 ```
 
