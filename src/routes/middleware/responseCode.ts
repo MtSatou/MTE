@@ -1,67 +1,51 @@
-import { NextFunction } from 'express';
+import { NextFunction, Response } from 'express';
+import HttpStatusCodes from '@src/constants/HttpStatusCodes';
+
+// 定义统一的响应格式
+interface StandardResponse<T = unknown> {
+  code: number;
+  data?: T;
+  message: string;
+  error?: T;
+}
 
 /**
- * 全局响应包装中间件：拦截 res.json，将响应体按统一协议返回。
- *
- * 约定（业务要求）：
- * - 成功响应（HTTP 2xx）统一返回 HTTP 200，且 body 中包含 code = 0 表示成功；
- *   code = 0 -> 成功
- * - 参数校验失败返回 HTTP 400，body 中 code = 400 表示请求参数错误；
- *   code = 400 -> 请求参数校验失败
- * - token 校验失败返回 HTTP 403，body 中 code = 403 表示鉴权失败/无权限；
- *   code = 403 -> 鉴权失败（token 无效或缺失）
- * - 服务器内部错误返回 HTTP 500，body 中 code = 500 表示代码报错；
- *   code = 500 -> 服务器内部错误
- * - 网关/上游超时返回 HTTP 504，body 中 code = 504 表示网络超时；
- *   code = 504 -> 网络或上游超时
- *
- * 返回包装策略：
- * - 如果原始 body 是对象（且不含 code 字段），把 code 插入并展开对象：{ code, ...body }
- * - 如果原始 body 是数组或原始值，则包装为 { code, data: body }
- * - 如果原始响应已包含 code 字段，则保留原样，不覆盖
+ * 统一响应格式中间件：将所有响应统一为 {code, data, message, error} 格式
+ * 
+ * 响应格式规范：
+ * - 成功响应：{ code: HTTP状态码, data: 业务数据, message: "成功信息" }
+ * - 错误响应：{ code: HTTP状态码, message: "错误信息", error: "详细错误信息" }
  */
-export default function responseCodeMiddleware(req: IReq, res: IRes, next: NextFunction) {
-  const originalJson = res.json.bind(res) as (body?: unknown) => IRes;
+export default function responseCodeMiddleware(req: IReq, res: IRes, next: NextFunction): void {
+  // 挂载便捷响应方法到 res 对象
+  res.success = function <T = unknown>(
+    data?: T,
+    message: string = '操作成功',
+    statusCode: number = HttpStatusCodes.OK
+  ): Response {
+    const responseData: StandardResponse<T> = {
+      code: statusCode,
+      data,
+      message,
+    };
+    return this.status(statusCode).json(responseData);
+  };
 
-  res.json = function (body?: unknown) {
-    try {
-      // If body is null/undefined -> wrap into data: null
-      if (body === undefined || body === null) {
-        const status = (res.statusCode || 200);
-        const code = status >= 200 && status < 300 ? 0 : status;
-        return originalJson({ code, data: null });
-      }
+  res.error = function <T = unknown>(
+    message: string,
+    error?: T,
+    statusCode: number = HttpStatusCodes.BAD_REQUEST
+  ): Response {
+    const response: StandardResponse<T> = {
+      code: statusCode,
+      message,
+    };
 
-      // If body is an object but NOT an Array and doesn't already have code, spread it
-      if (
-        typeof body === 'object' &&
-        !Array.isArray(body) &&
-        !Object.prototype.hasOwnProperty.call(body, 'code')
-      ) {
-        const status = res.statusCode || 200;
-        // 成功 -> 统一 code 0；失败 -> code = status
-        const code = status >= 200 && status < 300 ? 0 : status;
-        // 若成功则强制响应 HTTP 200（业务要求：成功全部返回 200）
-        if (status >= 200 && status < 300) {
-          res.status(200);
-        }
-        const wrapped = { code, ...body };
-        return originalJson(wrapped);
-      }
-
-      // For arrays or primitive values, wrap under data
-      if (!Object.prototype.hasOwnProperty.call(body, 'code')) {
-        const status = res.statusCode || 200;
-        const code = status >= 200 && status < 300 ? 0 : status;
-        if (status >= 200 && status < 300) {
-          res.status(200);
-        }
-        return originalJson({ code, data: body });
-      }
-    } catch (err) {
-      return originalJson(body);
+    if (error !== undefined && error !== null) {
+      response.error = error;
     }
-    return originalJson(body);
+
+    return this.status(statusCode).json(response);
   };
 
   return next();

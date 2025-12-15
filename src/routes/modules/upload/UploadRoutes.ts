@@ -1,4 +1,3 @@
-import HttpStatusCodes from '@src/constants/HttpStatusCodes';
 import UploadRepo from '@src/repos/modules/uploadRepo';
 import path from 'path';
 import fs from 'fs';
@@ -10,7 +9,7 @@ async function uploadFile(req: IReq, res: IRes) {
   const userId = Number(auth.id);
 
   if (!req.file) {
-    return res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '未上传文件' });
+    return res.error('未上传文件');
   }
 
   try {
@@ -32,7 +31,7 @@ async function uploadFile(req: IReq, res: IRes) {
       uploadTime: new Date().toLocaleString(),
     });
 
-    return res.status(HttpStatusCodes.CREATED).json({
+    return res.success({
       id: record.id,
       originalName: record.originalName,
       storedName: record.storedName,
@@ -42,19 +41,17 @@ async function uploadFile(req: IReq, res: IRes) {
       uploadTime: record.uploadTime,
     });
   } catch (e) {
-    return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: String(e) || '上传失败',
-    });
+    return res.error('上传失败');
   }
 }
 
 /** 获取我的上传记录：GET /upload/list */
-async function getMyUploads(req: IReq, res: IRes) {
+async function getMyUploads(_: IReq, res: IRes) {
   const auth = res.locals.auth;
   const userId = Number(auth?.id);
 
   const uploads = await UploadRepo.getAllByUserId(userId);
-  return res.status(HttpStatusCodes.OK).json({ uploads });
+  return res.success(uploads);
 }
 
 /** 获取单个上传记录：GET /upload/:id */
@@ -64,20 +61,20 @@ async function getUploadById(req: IReq, res: IRes) {
   const id = Number(req.params.id);
 
   if (!id) {
-    return res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '缺少 id' });
+    return res.error('缺少 id');
   }
 
   const record = await UploadRepo.getById(id);
   if (!record) {
-    return res.status(HttpStatusCodes.NOT_FOUND).json({ message: '文件记录不存在' });
+    return res.error('文件记录不存在');
   }
 
   // 只能查看自己的上传记录
   if (Number(record.userId) !== userId) {
-    return res.status(HttpStatusCodes.FORBIDDEN).json({ message: '无权访问' });
+    return res.error('无权访问');
   }
 
-  return res.status(HttpStatusCodes.OK).json({ upload: record });
+  return res.success(record);
 }
 
 /** 删除上传记录及文件：DELETE /upload/:id */
@@ -87,17 +84,17 @@ async function deleteUpload(req: IReq, res: IRes) {
   const id = Number(req.params.id);
 
   if (!id) {
-    return res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '缺少 id' });
+    return res.error('缺少 id');
   }
 
   const record = await UploadRepo.getById(id);
   if (!record) {
-    return res.status(HttpStatusCodes.NOT_FOUND).json({ message: '文件记录不存在' });
+    return res.error('文件记录不存在');
   }
 
   // 只能删除自己的上传
   if (Number(record.userId) !== userId) {
-    return res.status(HttpStatusCodes.FORBIDDEN).json({ message: '无权删除' });
+    return res.error('无权删除');
   }
 
   // 删除物理文件
@@ -108,9 +105,11 @@ async function deleteUpload(req: IReq, res: IRes) {
 
   // 删除数据库记录
   const ok = await UploadRepo.deleteById(id);
-  return res.status(ok ? HttpStatusCodes.OK : HttpStatusCodes.NOT_FOUND).json({
-    message: ok ? '删除成功' : '删除失败',
-  });
+  if (ok) {
+    return res.success(undefined, '删除成功');
+  } else {
+    return res.error('删除失败');
+  }
 }
 
 export default {

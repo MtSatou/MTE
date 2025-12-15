@@ -1,4 +1,3 @@
-import HttpStatusCodes from '@src/constants/HttpStatusCodes';
 import VerificationRepo from '@src/repos/modules/verificationRepo';
 import { sendVerificationEmail, generateVerificationCode } from '@src/util/email';
 
@@ -7,13 +6,13 @@ async function sendCode(req: IReq<never, never, { email: string }>, res: IRes) {
   const email = String(req.body.email || '').trim();
 
   if (!email) {
-    return res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '邮箱不能为空' });
+    return res.error('邮箱不能为空');
   }
 
   // 验证邮箱格式
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '邮箱格式不正确' });
+    return res.error('邮箱格式不正确');
   }
 
   // 生成验证码
@@ -23,20 +22,17 @@ async function sendCode(req: IReq<never, never, { email: string }>, res: IRes) {
     // 发送邮件
     const sent = await sendVerificationEmail(email, code);
     if (!sent) {
-      return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({ message: '邮件发送失败，请稍后重试' });
+      return res.error('邮件发送失败，请稍后重试');
     }
 
     // 保存验证码（10分钟有效期）
     await VerificationRepo.save(email, code, 10);
 
-    return res.status(HttpStatusCodes.OK).json({
-      message: '验证码已发送，请查收邮件',
+    return res.success({
       email,
-    });
+    }, '验证码已发送，请查收邮件');
   } catch (e) {
-    return res.status(HttpStatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: String(e) || '发送失败',
-    });
+    return res.error('发送失败');
   }
 }
 
@@ -46,21 +42,17 @@ async function verifyCode(req: IReq<never, never, { email: string; code: string 
   const code = req.body.code.trim();
 
   if (!email || !code) {
-    return res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '邮箱和验证码不能为空' });
+    return res.error('邮箱和验证码不能为空');
   }
 
   const isValid = await VerificationRepo.verify(email, code);
 
   if (isValid) {
-    return res.status(HttpStatusCodes.OK).json({
+    return res.success({
       valid: true,
-      message: '验证成功',
-    });
+    }, '验证成功');
   } else {
-    return res.status(HttpStatusCodes.BAD_REQUEST).json({
-      valid: false,
-      message: '验证码错误或已过期',
-    });
+    return res.error('验证码错误或已过期');
   }
 }
 

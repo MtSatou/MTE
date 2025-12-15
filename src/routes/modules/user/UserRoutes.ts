@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 import EnvVars from '@src/constants/EnvVars';
-import HttpStatusCodes from '@src/constants/HttpStatusCodes';
 import { validationResult } from 'express-validator';
 import { newUser } from './models';
 import { IUser } from '@src/routes/modules/user/types';
@@ -12,7 +11,7 @@ import UserRepo from '@src/repos/modules/userRepo';
  */
 async function getAll(_: IReq, res: IRes) {
   const users = await UserRepo.getAll();
-  return res.status(HttpStatusCodes.OK).json({ users });
+  return res.success(users);
 }
 
 /**
@@ -21,19 +20,19 @@ async function getAll(_: IReq, res: IRes) {
 async function register(req: IReq<never, never, IUser>, res: IRes) {
   const errs = validationResult(req);
   if (!errs.isEmpty()) {
-    return res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '请输入有效内容' });
+    return res.error('请输入有效内容');
   }
   const user = req.body;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) {
-    res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '邮箱格式不正确' }).end();
+    return res.error('邮箱格式不正确');
   }
   const byEmail = await UserRepo.getOne(user.email);
   if (byEmail) {
-    res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '邮箱已存在' }).end();
+    return res.error('邮箱已存在');
   }
   const newuser = newUser(user);
   await UserRepo.add(newuser);
-  return res.status(HttpStatusCodes.CREATED).json({ message: '注册成功' });
+  return res.success(undefined, '注册成功');
 }
 
 /**
@@ -42,14 +41,14 @@ async function register(req: IReq<never, never, IUser>, res: IRes) {
 async function update(req: IReq<never, never, Partial<IUser>>, res: IRes) {
   const auth = res.locals.auth;
   if (!auth || !auth.id) {
-    return res.status(HttpStatusCodes.FORBIDDEN).json({ message: '无效的用户' });
+    return res.error('无效的用户');
   }
 
   const user = req.body;
   // 仅允许用户更新自己
   const userId = user.id ?? auth.id;
   if (Number(userId) !== Number(auth.id)) {
-    return res.status(HttpStatusCodes.FORBIDDEN).json({ message: '更新失败' });
+    return res.error('更新失败');
   }
 
   const toUpdate: Partial<IUser> = {
@@ -71,26 +70,25 @@ async function update(req: IReq<never, never, Partial<IUser>>, res: IRes) {
   const actorId = Number(auth.id);
   const exists = await UserRepo.getById(actorId);
   if (!exists) {
-    return res.status(HttpStatusCodes.NOT_FOUND).json({ message: '找不到该用户' });
-
+    return res.error('找不到该用户');
   }
 
   // 如果传入了 id，确保是更新自己的
   if (toUpdate.id && Number(toUpdate.id) !== Number(actorId)) {
-    return res.status(HttpStatusCodes.FORBIDDEN).json({ message: '更新失败' });
+    return res.error('更新失败');
   }
 
   // 检查 username/email 唯一性（若有变更）
   if (toUpdate.username && toUpdate.username !== exists.username) {
     const other = await UserRepo.getByUsername(toUpdate.username);
     if (other && other.id !== actorId) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '用户名已存在' });
+      return res.error('用户名已存在');
     }
   }
   if (toUpdate.email && toUpdate.email !== exists.email) {
     const other = await UserRepo.getOne(toUpdate.email);
     if (other && other.id !== actorId) {
-      return res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '邮箱已存在' });
+      return res.error('邮箱已存在');
     }
   }
 
@@ -104,8 +102,7 @@ async function update(req: IReq<never, never, Partial<IUser>>, res: IRes) {
   } as IUser;
 
   await UserRepo.update(updatedUser);
-  return res.status(HttpStatusCodes.OK).json({ message: '更新成功' });
-
+  return res.success(undefined, '更新成功');
 }
 
 /**
@@ -114,19 +111,19 @@ async function update(req: IReq<never, never, Partial<IUser>>, res: IRes) {
 async function delete_(req: IReq, res: IRes) {
   const errs = validationResult(req);
   if (!errs.isEmpty()) {
-    return res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '请输入有效内容' });
+    return res.error('请输入有效内容');
   }
   const auth = res.locals.auth;
   if (!auth || !auth.id) {
-    return res.status(HttpStatusCodes.FORBIDDEN).json({ message: '注销失败' });
+    return res.error('注销失败');
   }
 
   const persists = await UserRepo.persists(auth.id);
   if (!persists) {
-    return res.status(HttpStatusCodes.NOT_FOUND).json({ message: '找不到该用户' });
+    return res.error('找不到该用户');
   }
   await UserRepo.delete(auth.id);
-  return res.status(HttpStatusCodes.OK).json({ message: '注销成功' });
+  return res.success(undefined, '注销成功');
 }
 
 /**
@@ -138,7 +135,7 @@ async function login(
 ) {
   const errs = validationResult(req);
   if (!errs.isEmpty()) {
-    return res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '请输入有效内容' });
+    return res.error('请输入有效内容');
   }
   const { username, password } = req.body;
 
@@ -151,10 +148,10 @@ async function login(
     user = await UserRepo.getOne(String(username));
   }
   if (!user) {
-    return res.status(HttpStatusCodes.FORBIDDEN).json({ message: '用户名或密码错误' });
+    return res.error('用户名或密码错误');
   }
   if (user.password !== password) {
-    return res.status(HttpStatusCodes.FORBIDDEN).json({ message: '用户名或密码错误' });
+    return res.error('用户名或密码错误');
   }
   const expMs = Number(EnvVars.Jwt.Exp ?? process.env.COOKIE_EXP ?? 0) || (2 * 60 * 60 * 1000);
   const token = TokenUtil.signToken({ id: user.id, email: user.email }, Math.floor(expMs / 1000));
@@ -163,7 +160,7 @@ async function login(
   user.tokenExpiresAt = expiresAt;
   // 将 token 存储到用户记录中，便于后续使旧 token 失效
   await UserRepo.setToken(user.id, token, expiresAt);
-  return res.status(HttpStatusCodes.OK).json({ token, expiresAt, user });
+  return res.success(user, '登录成功');
 }
 
 /**
@@ -182,7 +179,7 @@ async function validateToken(
   const token = headerToken || queryToken || bodyToken;
 
   if (!token) {
-    return res.status(HttpStatusCodes.BAD_REQUEST).json({ valid: false, message: '缺少 token' });
+    return res.error('无效的Token');
   }
 
   try {
@@ -190,14 +187,14 @@ async function validateToken(
     // 额外：检查该 token 是否与用户记录中当前 token 匹配（以支持刷新后废弃旧 token）
     const user = await UserRepo.getById(payload.id);
     if (!user) {
-      return res.status(HttpStatusCodes.FORBIDDEN).json({ valid: false, message: '无效的Token' });
+      return res.error('无效的Token');
     }
     if (!user.token || (user.token) !== token) {
-      return res.status(HttpStatusCodes.FORBIDDEN).json({ valid: false, message: '无效的Token' });
+      return res.error('无效的Token');
     }
-    return res.status(HttpStatusCodes.OK).json({ valid: true, payload, user });
+    return res.success({ valid: true, user });
   } catch (err) {
-    return res.status(HttpStatusCodes.FORBIDDEN).json({ valid: false, message: '无效的Token' });
+    return res.error('无效的Token');
   }
 }
 
@@ -208,7 +205,7 @@ async function validateToken(
 async function refreshToken(req: IReq, res: IRes) {
   const auth = res.locals.auth as TokenPayload | undefined;
   if (!auth || !auth.id) {
-    return res.status(HttpStatusCodes.FORBIDDEN).json({ message: '无效的用户' });
+    return res.error('无效的用户');
   }
 
   // 复制 payload 并移除 iat/exp 等自动字段
@@ -226,7 +223,7 @@ async function refreshToken(req: IReq, res: IRes) {
   const expiresAtMs = decoded?.exp ? Number(decoded.exp) * 1000 : null;
   await UserRepo.setToken(Number(auth.id), token, expiresAtMs);
 
-  return res.status(HttpStatusCodes.OK).json({ token, expiresAt: expiresAtMs });
+  return res.success({ token, expiresAt: expiresAtMs });
 }
 
 export default {

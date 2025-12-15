@@ -31,4 +31,16 @@ declare global {
   > = ExpressResponse<ResB, L>;
 }
 
+// 扩展 Express Response 类型
+declare global {
+  namespace Express {
+    interface Response {
+      // 成功响应方法
+      success<T = unknown>(data?: T, message?: string, statusCode?: number): Response;
+      // 错误响应方法
+      error(message: string, error?: unknown, statusCode?: number): Response;
+    }
+  }
+}
+
 export { global };
