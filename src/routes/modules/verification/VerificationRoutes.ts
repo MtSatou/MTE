@@ -1,5 +1,5 @@
 import HttpStatusCodes from '@src/constants/HttpStatusCodes';
-import VerificationRepo from '@src/repos/modules/verification/VerificationRepo';
+import VerificationRepo from '@src/repos/modules/verificationRepo';
 import { sendVerificationEmail, generateVerificationCode } from '@src/util/email';
 
 /** 发送验证码：POST /verification/send  body: { email } */

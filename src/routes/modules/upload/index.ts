@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import UploadRoutes from './UploadRoutes';
+import UploadRoutes from './uploadRoutes';
 import auth from '@src/routes/middleware/auth';
 import upload from '@src/util/upload';
 

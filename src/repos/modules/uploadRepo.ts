@@ -1,4 +1,4 @@
-import { query } from '../../mysql';
+import { query } from '../mysql';
 import { IUploadedFile } from '@src/types/upload';
 
 /** 获取自增 id */

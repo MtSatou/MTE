@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import VerificationRoutes from './VerificationRoutes';
+import VerificationRoutes from './verificationRoutes';
 import { authLimiter } from '@src/util/rate-limit';
 
 export const Base = '/verification';

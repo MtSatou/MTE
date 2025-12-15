@@ -5,7 +5,7 @@ import { validationResult } from 'express-validator';
 import { newUser } from '@src/models/User';
 import { IUser } from '@src/types/user';
 import TokenUtil, { TokenPayload } from '@src/util/token';
-import UserRepo from '@src/repos/modules/user/UserRepo';
+import UserRepo from '@src/repos/modules/userRepo';
 
 /**
  * 获取所有用户。

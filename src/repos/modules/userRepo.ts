@@ -1,5 +1,5 @@
 import { IUser } from '@src/types/user';
-import { query } from '../../mysql';
+import { query } from '../mysql';
 
 /**
  * 获取指定email用户

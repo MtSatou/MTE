@@ -1,5 +1,5 @@
 import HttpStatusCodes from '@src/constants/HttpStatusCodes';
-import UploadRepo from '@src/repos/modules/upload/UploadRepo';
+import UploadRepo from '@src/repos/modules/uploadRepo';
 import path from 'path';
 import fs from 'fs';
 import baseUrl from '@src/util/baseUrl';

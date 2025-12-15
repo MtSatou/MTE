@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStatusCodes from '@src/constants/HttpStatusCodes';
 import TokenUtil from '@src/util/token';
-import UserRepo from '@src/repos/modules/user/UserRepo';
+import UserRepo from '@src/repos/modules/userRepo';
 
 /**
  * 支持从 Authorization: Bearer <token> 获取 token 并验证

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import UserRoutes from './UserRoutes';
+import UserRoutes from './userRoutes';
 import auth from '@src/routes/middleware/auth';
 import { body } from 'express-validator';
 
