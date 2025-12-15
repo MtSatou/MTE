@@ -3,7 +3,7 @@ import EnvVars from '@src/constants/EnvVars';
 import HttpStatusCodes from '@src/constants/HttpStatusCodes';
 import { validationResult } from 'express-validator';
 import { newUser } from './models';
-import { IUser } from '@src/types/user';
+import { IUser } from '@src/routes/modules/user/types';
 import TokenUtil, { TokenPayload } from '@src/util/token';
 import UserRepo from '@src/repos/modules/userRepo';
 
@@ -33,7 +33,7 @@ async function register(req: IReq<never, never, IUser>, res: IRes) {
   }
   const newuser = newUser(user);
   await UserRepo.add(newuser);
-  return res.status(HttpStatusCodes.CREATED).json({ message: '注册成功' }).end();
+  return res.status(HttpStatusCodes.CREATED).json({ message: '注册成功' });
 }
 
 /**

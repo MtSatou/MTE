@@ -1,5 +1,5 @@
 import { query } from '../mysql';
-import { IUploadedFile } from '@src/types/upload';
+import { IUploadedFile } from '@src/routes/modules/upload/types';
 
 /** 获取自增 id */
 async function nextId(): Promise<number> {

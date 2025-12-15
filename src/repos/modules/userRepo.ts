@@ -1,4 +1,4 @@
-import { IUser } from '@src/types/user';
+import { IUser } from '@src/routes/modules/user/types';
 import { query } from '../mysql';
 
 /**

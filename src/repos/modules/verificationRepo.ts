@@ -1,5 +1,5 @@
 import { query } from '@src/repos/mysql';
-import { IVerificationCode } from '@src/types/verification';
+import { IVerificationCode } from '@src/routes/modules/verification/types';
 
 /** 保存验证码 */
 async function save(email: string, code: string, expiresInMinutes: number = 10): Promise<IVerificationCode> {
