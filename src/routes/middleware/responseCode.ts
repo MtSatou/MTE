@@ -9,6 +9,39 @@ interface StandardResponse<T = unknown> {
   error?: T;
 }
 
+// 检查对象是否为标准响应格式
+function isStandardResponse(obj: unknown): obj is StandardResponse {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    !Array.isArray(obj) &&
+    'code' in obj &&
+    'message' in obj
+  );
+}
+
+// 从对象中提取 message 和 error
+function extractFields(obj: Record<string, unknown>): { message?: string; error?: string } {
+  const result: { message?: string; error?: string } = {};
+
+  if ('message' in obj && typeof obj.message === 'string') {
+    result.message = obj.message;
+  }
+
+  if ('error' in obj && typeof obj.error === 'string') {
+    result.error = obj.error;
+  }
+
+  return result;
+}
+
+// 从对象中移除 message 和 error 字段 
+function removeMessageAndError(obj: Record<string, unknown>): Record<string, unknown> {
+  const { message: _, error: __, ...rest } = obj;
+  console.log(_, __);
+  return rest;
+}
+
 /**
  * 统一响应格式中间件：将所有响应统一为 {code, data, message, error} 格式
  * 
@@ -17,6 +50,55 @@ interface StandardResponse<T = unknown> {
  * - 错误响应：{ code: HTTP状态码, message: "错误信息", error: "详细错误信息" }
  */
 export default function responseCodeMiddleware(req: IReq, res: IRes, next: NextFunction): void {
+  const originalJson = res.json.bind(res) as (body?: unknown) => IRes;
+
+  // 重写 json 方法以支持统一格式
+  res.json = function (body?: unknown): IRes {
+    try {
+      const status = res.statusCode || HttpStatusCodes.OK;
+
+      // 如果已经是统一格式，直接返回
+      if (body !== undefined && isStandardResponse(body)) {
+        return originalJson(body);
+      }
+
+      // 包装为统一格式
+      const wrappedResponse: StandardResponse = {
+        code: status,
+        message: status >= 200 && status < 300 ? '操作成功' : '操作失败',
+      };
+
+      // 处理响应数据
+      if (body !== null && body !== undefined) {
+        if (typeof body === 'object' && !Array.isArray(body)) {
+          const bodyObj = body as Record<string, unknown>;
+
+          // 提取 message 和 error 字段
+          const extractedFields = extractFields(bodyObj);
+          if (extractedFields.message) {
+            wrappedResponse.message = extractedFields.message;
+          }
+          if (extractedFields.error) {
+            wrappedResponse.error = extractedFields.error;
+          }
+
+          // 创建不包含 message 和 error 的副本作为 data
+          const dataWithoutFields = removeMessageAndError(bodyObj);
+          const hasDataFields = Object.keys(dataWithoutFields).length > 0;
+          wrappedResponse.data = hasDataFields ? dataWithoutFields : undefined;
+        } else {
+          // 数组或原始值作为 data
+          wrappedResponse.data = body;
+        }
+      }
+
+      return originalJson(wrappedResponse);
+    } catch (err) {
+      // 如果包装失败，返回原始数据
+      return originalJson(body);
+    }
+  };
+
   // 挂载便捷响应方法到 res 对象
   res.success = function <T = unknown>(
     data?: T,
