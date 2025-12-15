@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import EnvVars from '@src/constants/EnvVars';
 import HttpStatusCodes from '@src/constants/HttpStatusCodes';
 import { validationResult } from 'express-validator';
-import { newUser } from '@src/models/User';
+import { newUser } from './models';
 import { IUser } from '@src/types/user';
 import TokenUtil, { TokenPayload } from '@src/util/token';
 import UserRepo from '@src/repos/modules/userRepo';
