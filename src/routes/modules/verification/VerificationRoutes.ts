@@ -1,5 +1,4 @@
 import HttpStatusCodes from '@src/constants/HttpStatusCodes';
-import UserRepo from '@src/repos/modules/user/UserRepo';
 import VerificationRepo from '@src/repos/modules/verification/VerificationRepo';
 import { sendVerificationEmail, generateVerificationCode } from '@src/util/email';
 
@@ -15,12 +14,6 @@ async function sendCode(req: IReq<never, never, { email: string }>, res: IRes) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(HttpStatusCodes.BAD_REQUEST).json({ message: '邮箱格式不正确' });
-  }
-
-  // 检查邮箱是否已存在
-  const existingUser = await UserRepo.getOne(email);
-  if (existingUser) {
-    return res.status(HttpStatusCodes.CONFLICT).json({ message: '该邮箱已被注册' });
   }
 
   // 生成验证码

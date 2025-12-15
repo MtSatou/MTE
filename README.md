@@ -88,7 +88,6 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - email `string` `收件人`
 
 - 添加成功行为
-  - 验证码存储于 /repos/db 文件夹
   - 成功返回
   ```js
   {
@@ -125,7 +124,6 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
   - file `file` `文件`
 
 - 添加成功行为
-  - 数据存储于 /repos/db 文件夹
   - 文件存储于 uploads 文件夹
   - 成功返回
   ```js
@@ -368,7 +366,7 @@ EMAIL_FROM=MTExpress <your-email@gmail.com>
 
 #### 刷新token
 仅刷新自己
-- `post` /users/validate-token
+- `post` /users/refresh-token
 - `header`
   - Authorization `Bearer Token`
 
