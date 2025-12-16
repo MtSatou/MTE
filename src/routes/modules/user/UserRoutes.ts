@@ -5,6 +5,8 @@ import { newUser } from './models';
 import { IUser } from '@src/routes/modules/user/types';
 import TokenUtil, { TokenPayload } from '@src/util/token';
 import UserRepo from '@src/repos/modules/userRepo';
+import RedisCacheService from '@src/services/RedisCacheService';
+import { CACHE_KEYS } from '@src/constants/CacheKeys';
 
 /**
  * 获取所有用户。
@@ -153,13 +155,26 @@ async function login(
   if (user.password !== password) {
     return res.error('用户名或密码错误');
   }
-  const expMs = Number(EnvVars.Jwt.Exp ?? process.env.COOKIE_EXP ?? 0) || (2 * 60 * 60 * 1000);
+  const expMs = Number(EnvVars.Jwt.Exp) || (2 * 60 * 60 * 1000);
   const token = TokenUtil.signToken({ id: user.id, email: user.email }, Math.floor(expMs / 1000));
   const expiresAt = Date.now() + expMs;
   user.token = token;
   user.tokenExpiresAt = expiresAt;
   // 将 token 存储到用户记录中，便于后续使旧 token 失效
   await UserRepo.setToken(user.id, token, expiresAt);
+
+  // 缓存用户信息和token信息
+  await RedisCacheService.setObject(CACHE_KEYS.USER(user.id), user);
+  await RedisCacheService.setObject(
+    CACHE_KEYS.USER_TOKEN(token),
+    { id: user.id, email: user.email, exp: expiresAt },
+  );
+  await RedisCacheService.setObject(CACHE_KEYS.USER_LOGIN(user.id), {
+    loginTime: Date.now(),
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+  });
+
   return res.success(user, '登录成功');
 }
 
@@ -184,14 +199,41 @@ async function validateToken(
 
   try {
     const payload = TokenUtil.verifyToken(token);
-    // 额外：检查该 token 是否与用户记录中当前 token 匹配（以支持刷新后废弃旧 token）
-    const user = await UserRepo.getById(payload.id);
+
+    // 优先从Redis缓存获取token信息
+    const tokenData = await RedisCacheService.getObject<{ id: number; email: string; exp: number }>(CACHE_KEYS.USER_TOKEN(token));
+    let user = null;
+
+    if (tokenData && tokenData.id === payload.id) {
+      // 从缓存获取用户信息
+      user = await RedisCacheService.getObject<IUser>(CACHE_KEYS.USER(tokenData.id));
+      if (!user) {
+        // 缓存中没有，从数据库获取
+        user = await UserRepo.getById(payload.id);
+        if (user) {
+          await RedisCacheService.setObject(CACHE_KEYS.USER(user.id), user);
+        }
+      }
+    } else {
+      // Redis中没有或验证失败，回退到数据库验证
+      user = await UserRepo.getById(payload.id);
+      if (user && user.token === token) {
+        // 重新缓存token和用户信息
+        await RedisCacheService.setObject(
+          CACHE_KEYS.USER_TOKEN(token),
+          { id: user.id, email: user.email, exp: tokenData?.exp || 0 },
+        );
+        await RedisCacheService.setObject(CACHE_KEYS.USER(user.id), user);
+      }
+    }
+
     if (!user) {
       return res.error('无效的Token');
     }
-    if (!user.token || (user.token) !== token) {
+    if (!user.token || user.token !== token) {
       return res.error('无效的Token');
     }
+
     return res.success({ valid: true, user });
   } catch (err) {
     return res.error('无效的Token');
@@ -202,7 +244,7 @@ async function validateToken(
  * 刷新当前用户的 token（延长过期时间）
  * 需要 auth 中间件将解析后的 payload 放到 res.locals.auth
  */
-async function refreshToken(req: IReq, res: IRes) {
+async function refreshToken(_: IReq, res: IRes) {
   const auth = res.locals.auth as TokenPayload | undefined;
   if (!auth || !auth.id) {
     return res.error('无效的用户');

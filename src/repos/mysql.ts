@@ -1,6 +1,7 @@
 import mysql from 'mysql2/promise';
 import EnvVars from '@src/constants/EnvVars';
 import logger from '@src/util/log';
+import { initDatabase } from './database';
 
 // MySQL连接池
 const pool = mysql.createPool({
@@ -49,9 +50,25 @@ export function getPool(): mysql.Pool {
 export async function closePool(): Promise<void> {
   try {
     await pool.end();
-    logger.info('数据库连接池已关闭');
   } catch (error) {
     logger.warn('数据库关闭失败:');
+    logger.error(error);
+    throw error;
+  }
+}
+
+
+export async function initializeDatabase() {
+  try {
+    const isConnected = await testConnection();
+    if (isConnected) {
+      logger.info('MySQL 连接成功');
+      await initDatabase();
+    } else {
+      logger.error('MySQL 数据库连接失败');
+      throw new Error('MySQL 数据库连接失败');
+    }
+  } catch (error) {
     logger.error(error);
     throw error;
   }
@@ -63,4 +80,5 @@ export default {
   query,
   getPool,
   closePool,
+  initializeDatabase
 };

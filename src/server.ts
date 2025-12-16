@@ -10,9 +10,8 @@ import express, { Request, Response, NextFunction } from 'express';
 import logger from '@src/util/log';
 import { isDev } from '@src/util/baseUrl';
 import { globalLimiter } from '@src/util/rate-limit';
-
-import { testConnection, closePool } from './repos/mysql';
-import { initDatabase } from './repos/database';
+import { initializeDatabase, closePool } from './repos/mysql';
+import { closeRedis, initializeRedis } from './routes/middleware/redis';
 
 import 'express-async-errors';
 
@@ -87,47 +86,43 @@ export default app;
 
 // ---- 初始化数据库 ---- //
 // 初始化数据库连接
-async function initializeDatabase() {
+initializeDatabase().catch((error) => {
+  logger.info('数据库初始化失败:');
+  logger.error(error);
+});
+
+// 初始化 Redis 连接（如果启用）
+initializeRedis().catch(error => {
+  logger.info('Redis初始化失败:');
+  logger.error(error);
+});
+
+
+// 应用关闭时清理连接
+async function gracefulShutdown(): Promise<void> {
   try {
-    const isConnected = await testConnection();
-    if (isConnected) {
-      logger.info('MySQL 数据库连接成功');
-      await initDatabase();
-    } else {
-      logger.error('MySQL 数据库连接失败');
-      throw new Error('MySQL 数据库连接失败');
-    }
-  } catch (error) {
-    logger.error(error);
-    throw error;
+    // 并行关闭所有连接，设置总体超时
+    await Promise.race([
+      Promise.all([
+        closeRedis(),
+        closePool(),
+      ]),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('关闭超时')), 1500)
+      )
+    ]);
+
+    logger.info('Redis 连接已关闭');
+    logger.info('MySql 连接已关闭');
+  } finally {
+    // eslint-disable-next-line 
+    process.exit(0);
   }
 }
 
-// 执行数据库初始化
-initializeDatabase().catch((error) => {
-  logger.error(error);
-  throw new Error('数据库初始化失败');
-});
-
-// 应用关闭时清理数据库连接
-process.on('SIGINT', async () => {
-  logger.info('正在关闭数据库连接...');
-  try {
-    await closePool();
-    logger.info('数据库连接已关闭');
-  } catch (error) {
-    logger.error(error);
-  }
-  throw new Error('关闭数据库连接时出错');
-});
-
-process.on('SIGTERM', async () => {
-  logger.info('正在关闭数据库连接...');
-  try {
-    await closePool();
-    logger.info('数据库连接已关闭');
-  } catch (error) {
-    logger.error(error);
-  }
-  throw new Error('关闭数据库连接时出错');
-});
+// 处理各种终止信号
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
+// 处理未捕获的异常
+process.on('uncaughtException', gracefulShutdown);
+process.on('unhandledRejection', gracefulShutdown);

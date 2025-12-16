@@ -5,14 +5,15 @@ nodejs版本要求：`18 < n`。
 
 ## 功能特性
 
-1. **MySql**: 支持MySql数据库
-2. **WS**：支持ws链接，实现广播/心跳检测/房间功能
-3. **Token鉴权**：内置Token鉴权，实现API权限拦截
-4. **请求限流**：内置全局/局部请求限流拦截
-5. **文件上传**：支持文件上传
-6. **邮件支持**：支持发送邮件，需配置邮箱
-7. **模块化管理**：使用Router/Service/pepos分离管理
-8. **内置用户/验证码模块**：示例接口增删改查
+1. **MySql**：支持MySql数据库
+2. **Redis缓存**：支持Redis缓存（可选开启）
+3. **WS**：支持ws链接，实现广播/心跳检测/房间功能
+4. **Token鉴权**：内置Token鉴权，实现API权限拦截
+5. **请求限流**：内置全局/局部请求限流拦截
+6. **文件上传**：支持文件上传
+7. **邮件支持**：支持发送邮件，需配置邮箱
+8. **模块化管理**：使用Router/Service/pepos分离管理
+9. **内置用户/验证码模块**：示例接口增删改查
 
 ## 启动服务
 `npm install` 初始化项目
@@ -54,6 +55,63 @@ userRouter.post(
   // servers 函数
   UserRoutes.register,
 );
+```
+
+
+
+## Redis 缓存支持（可选）
+Redis 缓存可以显著提升应用性能，支持多种缓存场景：
+
+### 全局配置
+如需使用 Redis，请至 `/env` 文件中配置相关设置：
+```bash
+## Redis Configuration ##
+# Redis缓存配置（可选，设置为 true 启用）
+REDIS_ENABLED=true
+# Redis服务器配置
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+# Redis键前缀
+REDIS_KEY_PREFIX=mtexpress:
+# 默认过期时间（秒）
+REDIS_TTL=3600
+```
+
+### 功能特性
+- **用户信息缓存**：自动缓存用户登录信息和权限数据
+- **验证码缓存**：验证码存储在Redis中，提高读取性能
+- **Token缓存**：JWT token验证优化，减少数据库查询
+- **API响应缓存**：可配置的API接口响应缓存
+- **限流功能**：基于Redis的分布式限流
+- **登录状态管理**：用户登录/登出状态实时管理
+
+### 使用示例
+```js
+import RedisCacheService from '@src/services/RedisCacheService';
+import { CACHE_KEYS } from '@src/constants/CacheKeys';
+
+// 缓存用户信息
+await RedisCacheService.setObject(CACHE_KEYS.USER(userId), userData);
+
+// 获取缓存用户
+const user = await RedisCacheService.getObject(CACHE_KEYS.USER(userId));
+
+// 清除用户缓存
+await RedisCacheService.del(CACHE_KEYS.USER(userId));
+
+// 缓存验证码
+await RedisCacheService.set(CACHE_KEYS.VERIFICATION_CODE(email), code, { ttl: 600 });
+
+// 缓存API响应
+await RedisCacheService.setObject(CACHE_KEYS.API_RESPONSE('user:list'), users, { ttl: 300 });
+
+// 设置限流
+const allowed = await RedisCacheService.setRateLimit('api:login', 5, 60);
+
+// 批量删除缓存
+await RedisCacheService.delPattern(CACHE_KEYS.PATTERN.ALL_USERS);
 ```
 
 ## 内置接口

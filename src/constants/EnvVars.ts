@@ -47,4 +47,14 @@ export default {
     Timezone: (process.env.DB_TIMEZONE ?? '+08:00'),
     ConnectionLimit: Number(process.env.DB_CONNECTION_LIMIT ?? 10),
   },
+  // Redis配置（可选）
+  Redis: {
+    Enabled: (process.env.REDIS_ENABLED === 'true'),
+    Host: (process.env.REDIS_HOST ?? 'localhost'),
+    Port: Number(process.env.REDIS_PORT ?? 6379),
+    Password: (process.env.REDIS_PASSWORD ?? ''),
+    Database: Number(process.env.REDIS_DB ?? 0),
+    KeyPrefix: (process.env.REDIS_KEY_PREFIX ?? 'mtexpress:'),
+    TTL: Number(process.env.REDIS_TTL ?? 3600), // 默认1小时
+  },
 } as const;
