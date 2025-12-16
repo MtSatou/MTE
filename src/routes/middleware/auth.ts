@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import HttpStatusCodes from '@src/constants/HttpStatusCodes';
 import TokenUtil from '@src/util/token';
 import UserRepo from '@src/repos/modules/userRepo';
+import RedisCacheService from '@src/services/RedisCacheService';
+import { CACHE_KEYS } from '@src/constants/CacheKeys';
+import { IUser } from '../modules/user/types';
 
 /**
  * 支持从 Authorization: Bearer <token> 获取 token 并验证
@@ -24,7 +27,14 @@ export default async function auth(
   try {
     const payload = TokenUtil.verifyToken(token);
     // 校验签名与过期通过后，再比对持久化的 token（用于在刷新后废弃旧 token）
-    const user = await UserRepo.getById(payload.id);
+    let user: IUser | null = null;
+    const cacheUser = await RedisCacheService.getObject(CACHE_KEYS.USER(payload.id)) as IUser;
+    console.log(cacheUser, 'cacheUser')
+    if (cacheUser && cacheUser.token === token) {
+      user = cacheUser;
+    } else {
+      user = await UserRepo.getById(payload.id);
+    }
     if (!user) {
       return res.status(HttpStatusCodes.FORBIDDEN).json({ message: '无效的Token' });
     }

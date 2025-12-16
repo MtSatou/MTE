@@ -10,6 +10,7 @@ declare global {
   interface Locals {
     auth: {
       id: number;
+      email: string;
     };
   }
   /** 全局 Request 类型别名：按需覆盖 Body/Params/Query 的类型 */
