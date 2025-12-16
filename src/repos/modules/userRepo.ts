@@ -1,5 +1,5 @@
 import { IUser } from '@src/routes/modules/user/types';
-import { query } from '../mysql';
+import { query } from '../../util/mysql';
 
 /**
  * 获取指定email用户

@@ -1,4 +1,4 @@
-import { testConnection, query } from './mysql';
+import { testConnection, query } from '../util/mysql';
 import logger from '@src/util/log';
 
 // 创建用户表

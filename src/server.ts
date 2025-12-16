@@ -10,7 +10,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import logger from '@src/util/log';
 import { isDev } from '@src/util/baseUrl';
 import { globalLimiter } from '@src/util/rate-limit';
-import { initializeDatabase, closePool } from './repos/mysql';
+import { initializeDatabase, closePool } from './util/mysql';
 import { closeRedis, initializeRedis } from './routes/middleware/redis';
 
 import 'express-async-errors';

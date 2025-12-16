@@ -1,4 +1,4 @@
-import { query } from '@src/repos/mysql';
+import { query } from '@src/util/mysql';
 import { IVerificationCode } from '@src/routes/modules/verification/types';
 
 /** 保存验证码 */

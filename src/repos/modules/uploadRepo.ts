@@ -1,4 +1,4 @@
-import { query } from '../mysql';
+import { query } from '../../util/mysql';
 import { IUploadedFile } from '@src/routes/modules/upload/types';
 
 /** 获取自增 id */

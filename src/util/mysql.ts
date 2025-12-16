@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 import EnvVars from '@src/constants/EnvVars';
 import logger from '@src/util/log';
-import { initDatabase } from './database';
+import { initDatabase } from '../repos/database';
 
 // MySQL连接池
 const pool = mysql.createPool({
