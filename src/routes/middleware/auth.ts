@@ -29,7 +29,6 @@ export default async function auth(
     // 校验签名与过期通过后，再比对持久化的 token（用于在刷新后废弃旧 token）
     let user: IUser | null = null;
     const cacheUser = await RedisCacheService.getObject(CACHE_KEYS.USER(payload.id)) as IUser;
-    console.log(cacheUser, 'cacheUser')
     if (cacheUser && cacheUser.token === token) {
       user = cacheUser;
     } else {
