@@ -23,7 +23,7 @@ function getStatus(_: IReq, res: IRes) {
  * WebSocket 消息处理器
  */
 function handleConnection(ws: WebSocket, req: IncomingMessage) {
-  console.log(req);
+  req;
   // 扩展 WebSocket 对象
   const extWs = ws as ExtendedWebSocket;
   extWs.id = uuidv4();

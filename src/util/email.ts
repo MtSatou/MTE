@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import EnvVars from '@src/constants/EnvVars';
+import { logger } from './log';
 
 /** 创建邮件传输器 */
 function createTransporter() {
@@ -18,7 +19,7 @@ function createTransporter() {
 export async function sendVerificationEmail(to: string, code: string): Promise<boolean> {
   try {
     const transporter = createTransporter();
-    
+
     const mailOptions = {
       from: EnvVars.Email.From || EnvVars.Email.User,
       to,
@@ -38,10 +39,10 @@ export async function sendVerificationEmail(to: string, code: string): Promise<b
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('邮件发送成功:', info.messageId);
+    logger.info(`邮件发送成功: ${info.messageId} to ${to}`);
     return true;
   } catch (error) {
-    console.error('邮件发送失败:', error);
+    logger.error(error);
     return false;
   }
 }

@@ -321,7 +321,7 @@ class ConnectionManager {
     this.stopHeartbeat();
 
     this.clients.forEach((ws, id) => {
-      console.log(`关闭连接: ${id}`);
+      logger.info(`关闭连接: ${id}`);
       ws.close(1000, '服务器关闭');
     });
 
