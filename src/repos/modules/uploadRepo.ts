@@ -22,7 +22,7 @@ async function add(record: Omit<IUploadedFile, 'id'>): Promise<IUploadedFile> {
     record.fileSize,
     record.mimeType,
     record.userId,
-    record.uploadTime || new Date().toISOString().slice(0, 19).replace('T', ' ')
+    record.uploadTime || new Date().toLocaleString(),
   ]);
 
   const result = await getById(id);

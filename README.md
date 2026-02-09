@@ -552,7 +552,7 @@ import WebSocketService from '@src/services/WebSocketService';
 WebSocketService.broadcast({
   type: 'notification',
   message: '系统通知',
-  timestamp: new Date().toISOString()
+  timestamp: new Date().toLocaleString()
 });
 ```
 

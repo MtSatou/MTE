@@ -194,7 +194,7 @@ class ConnectionManager {
     try {
       const data = JSON.stringify({
         ...message,
-        timestamp: message.timestamp || new Date().toISOString(),
+        timestamp: message.timestamp || new Date().toLocaleString(),
       });
       ws.send(data);
       return true;

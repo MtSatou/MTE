@@ -59,7 +59,7 @@ async function add(user: Omit<IUser, 'id'>): Promise<void> {
     user.password,
     user.code || null,
     user.avatar || null,
-    user.created || new Date().toISOString().slice(0, 19).replace('T', ' '),
+    user.created || new Date().toLocaleString(),
     user.updated || null,
     user.token || null,
     user.tokenExpiresAt || null,
@@ -85,7 +85,7 @@ async function update(user: IUser): Promise<void> {
     user.email,
     user.password,
     user.avatar,
-    user.updated || new Date().toISOString().slice(0, 19).replace('T', ' '),
+    user.updated || new Date().toLocaleString(),
     user.id,
   ]);
 }
@@ -108,7 +108,7 @@ async function setToken(
   await query(sql, [
     token,
     tokenExpiresAt,
-    new Date().toISOString().slice(0, 19).replace('T', ' '),
+    new Date().toLocaleString(),
     id,
   ]);
 }

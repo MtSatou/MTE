@@ -93,7 +93,7 @@ function handleMessage(clientId: string, message: WSMessage): void {
       // 响应 ping
       ConnectionManager.sendToClient(clientId, {
         type: MessageType.PONG,
-        data: { timestamp: new Date().toISOString() },
+        data: { timestamp: new Date().toLocaleString() },
       });
       break;
 

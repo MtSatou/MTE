@@ -606,7 +606,7 @@
         type: 'broadcast',
         data: {
           text: '这是一条广播测试消息',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toLocaleString()
         }
       };
 
@@ -639,7 +639,7 @@
         data: {
           text: msgContent,
           broadcast: true,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toLocaleString()
         }
       };
 
