@@ -1,4 +1,4 @@
-import mysql from 'mysql2/promise';
+import mysql, { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import EnvVars from '@src/constants/EnvVars';
 import logger from '@src/util/log';
 import { initDatabase } from '../repos/database';
@@ -30,10 +30,10 @@ export async function testConnection(): Promise<boolean> {
 }
 
 // 执行查询
-export async function query<T>(sql: string, params?: T): Promise<mysql.QueryResult> {
+export async function query<T>(sql: string, params?: unknown[]): Promise<T> {
   try {
-    const [rows] = await pool.execute(sql, params);
-    return rows;
+    const [rows] = await pool.execute<T & RowDataPacket[] | ResultSetHeader>(sql, params);
+    return rows as T;
   } catch (error) {
     logger.warn('数据库查询失败:');
     logger.error(error);
@@ -80,5 +80,5 @@ export default {
   query,
   getPool,
   closePool,
-  initializeDatabase
+  initializeDatabase,
 };

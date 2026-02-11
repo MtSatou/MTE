@@ -6,7 +6,7 @@ import { query } from '../../util/mysql';
  */
 async function getOne(email: string): Promise<IUser | null> {
   const sql = 'SELECT * FROM users WHERE email = ?';
-  const rows = await query(sql, [email]) as IUser[];
+  const rows = await query<IUser[]>(sql, [email]);
   return rows.length > 0 ? rows[0] : null;
 }
 
@@ -15,7 +15,7 @@ async function getOne(email: string): Promise<IUser | null> {
  */
 async function getById(id: number): Promise<IUser | null> {
   const sql = 'SELECT * FROM users WHERE id = ?';
-  const rows = await query(sql, [id]) as IUser[];
+  const rows = await query<IUser[]>(sql, [id]);
   return rows.length > 0 ? rows[0] : null;
 }
 
@@ -24,7 +24,7 @@ async function getById(id: number): Promise<IUser | null> {
  */
 async function getByUsername(username: string): Promise<IUser | null> {
   const sql = 'SELECT * FROM users WHERE username = ?';
-  const rows = await query(sql, [username]) as IUser[];
+  const rows = await query<IUser[]>(sql, [username]);
   return rows.length > 0 ? rows[0] : null;
 }
 
@@ -33,7 +33,7 @@ async function getByUsername(username: string): Promise<IUser | null> {
  */
 async function persists(id: number): Promise<boolean> {
   const sql = 'SELECT COUNT(*) as count FROM users WHERE id = ?';
-  const rows = await query(sql, [id]) as { count: number }[];
+  const rows = await query<{ count: number }[]>(sql, [id]);
   return rows[0].count > 0;
 }
 
@@ -42,7 +42,7 @@ async function persists(id: number): Promise<boolean> {
  */
 async function getAll(): Promise<IUser[]> {
   const sql = 'SELECT * FROM users ORDER BY created DESC';
-  return await query(sql) as IUser[];
+  return await query<IUser[]>(sql);
 }
 
 /**

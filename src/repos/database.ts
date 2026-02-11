@@ -33,31 +33,6 @@ export async function createUsersTable(): Promise<void> {
 }
 
 
-// 创建验证码表
-export async function createVerificationTable(): Promise<void> {
-  const sql = `
-    CREATE TABLE IF NOT EXISTS verification_codes (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      email VARCHAR(255) NOT NULL,
-      code VARCHAR(10) NOT NULL,
-      createdAt BIGINT NOT NULL,
-      expiresAt BIGINT NOT NULL,
-      INDEX idx_email (email),
-      INDEX idx_expiresAt (expiresAt),
-      UNIQUE KEY unique_email (email)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  `;
-
-  try {
-    await query(sql);
-  } catch (error) {
-    logger.warn('创建验证码表失败:');
-    logger.error(error);
-    throw error;
-  }
-}
-
-
 // 创建上传文件表
 export async function createUploadsTable(): Promise<void> {
   const sql = `
@@ -95,7 +70,6 @@ export async function initDatabase(): Promise<void> {
     }
 
     await createUsersTable();
-    await createVerificationTable();
     await createUploadsTable();
   } catch (error) {
     logger.warn('数据库初始化失败:');

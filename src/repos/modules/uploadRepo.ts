@@ -3,7 +3,7 @@ import { IUploadedFile } from '@src/routes/modules/upload/types';
 
 /** 获取自增 id */
 async function nextId(): Promise<number> {
-  const rows = await query('SELECT MAX(id) as maxId FROM uploads') as { maxId: number }[];
+  const rows = await query<{ maxId: number }[]>('SELECT MAX(id) as maxId FROM uploads');
   return (rows[0]?.maxId || 0) + 1;
 }
 
@@ -37,20 +37,20 @@ async function add(record: Omit<IUploadedFile, 'id'>): Promise<IUploadedFile> {
 /** 通过 id 获取上传记录 */
 async function getById(id: number): Promise<IUploadedFile | null> {
   const sql = 'SELECT * FROM uploads WHERE id = ?';
-  const rows = await query(sql, [id]) as IUploadedFile[];
+  const rows = await query<IUploadedFile[]>(sql, [id]);
   return rows.length > 0 ? rows[0] : null;
 }
 
 /** 获取用户的所有上传记录 */
 async function getAllByUserId(userId: number): Promise<IUploadedFile[]> {
   const sql = 'SELECT * FROM uploads WHERE userId = ? ORDER BY uploadTime DESC';
-  return await query(sql, [userId]) as IUploadedFile[];
+  return await query<IUploadedFile[]>(sql, [userId]);
 }
 
 /** 删除上传记录 */
 async function deleteById(id: number): Promise<boolean> {
   const sql = 'DELETE FROM uploads WHERE id = ?';
-  const result = await query(sql, [id]) as { affectedRows: number };
+  const result = await query<{ affectedRows: number }>(sql, [id]);
   return (result.affectedRows || 0) > 0;
 }
 

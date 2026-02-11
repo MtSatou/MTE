@@ -1,4 +1,3 @@
-import VerificationRepo from '@src/repos/modules/verificationRepo';
 import { sendVerificationEmail, generateVerificationCode } from '@src/util/email';
 import RedisCacheService from '@src/services/RedisCacheService';
 import { CACHE_KEYS } from '@src/constants/CacheKeys';
@@ -27,9 +26,6 @@ async function sendCode(req: IReq<never, never, { email: string }>, res: IRes) {
       return res.error('邮件发送失败，请稍后重试');
     }
 
-    // 保存验证码（10分钟有效期）
-    await VerificationRepo.save(email, code, 10);
-
     // 缓存验证码到Redis
     await RedisCacheService.set(CACHE_KEYS.VERIFICATION_CODE(email), code, { ttl: 600 });
 
@@ -50,7 +46,6 @@ async function verifyCode(req: IReq<never, never, { email: string; code: string 
     return res.error('邮箱和验证码不能为空');
   }
 
-  // 优先从Redis缓存获取验证码
   let isValid = false;
   const cachedCode = await RedisCacheService.get(CACHE_KEYS.VERIFICATION_CODE(email));
 
@@ -58,7 +53,7 @@ async function verifyCode(req: IReq<never, never, { email: string; code: string 
     isValid = true;
     await RedisCacheService.del(CACHE_KEYS.VERIFICATION_CODE(email));
   } else {
-    isValid = await VerificationRepo.verify(email, code);
+    return res.error('验证码错误或已过期');
   }
 
   if (isValid) {
